@@ -29,6 +29,9 @@ from fpdf import FPDF
 app = Flask(__name__)
 app.secret_key = 'your_secret_key_here'  # replace with your own
 
+app.config['TEMPLATES_AUTO_RELOAD'] = True
+app.jinja_env.auto_reload = True
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+mysqlconnector://root:@localhost/scanngo'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
@@ -53,13 +56,13 @@ class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(150), unique=True)
     email = db.Column(db.String(150), unique=True)
-    full_name = db.Column(db.String(150))
-    age = db.Column(db.Integer)
-    year_level = db.Column(db.String(50))
-    status = db.Column(db.String(50))
-    citizenship = db.Column(db.String(100))
-    address = db.Column(db.String(255))
-    place_of_birth = db.Column(db.String(150))
+    # full_name = db.Column(db.String(150))
+    # age = db.Column(db.Integer)
+    # year_level = db.Column(db.String(50))
+    # status = db.Column(db.String(50))
+    # citizenship = db.Column(db.String(100))
+    # address = db.Column(db.String(255))
+    # place_of_birth = db.Column(db.String(150))
     role = db.Column(db.String(50), nullable=False, default="user")
     
     
@@ -839,6 +842,40 @@ def submit_profile_update():
     return redirect(url_for('profile'))
 
 
+@app.route('/scan_qr', methods=['POST'])
+def scan_qr_result():
+    data = request.get_json() or {}
+    qr_data = data.get('qr_data', '')
+
+    # Parse QR format: "ID:1, Name:John"
+    user_id = None
+    if isinstance(qr_data, dict):
+        user_id = qr_data.get('ID')
+    elif isinstance(qr_data, str):
+        try:
+            user_id = int(qr_data.split(",")[0].split(":")[1].strip())
+        except Exception:
+            return jsonify({"error": "Invalid QR code format."}), 400
+
+    try:
+        user_id = int(user_id)
+    except Exception:
+        return jsonify({"error": "Invalid or missing ID in QR data."}), 400
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("SELECT id, username, email FROM users WHERE id=%s", (user_id,))
+    user = cursor.fetchone()
+    cursor.close()
+    conn.close()
+
+    if not user:
+        return jsonify({"error": "User not found."}), 404
+    
+    # print(user)
+
+    return jsonify(user)
+    
 
 
 @app.route('/approve_update/<int:update_id>', methods=['POST'])
@@ -885,6 +922,6 @@ if __name__ == "__main__":
     app.run(
         host="0.0.0.0",
         port=5000,
-        debug=False
+        debug=True
     )
 

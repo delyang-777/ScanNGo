@@ -145,10 +145,22 @@
 <script src="https://unpkg.com/html5-qrcode"></script>
 
 <script>
+let scanner = null;
 // Beep sound
 function playBeep() {
     const audio = new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg");
     audio.play();
+}
+
+function parse_decode(decode)
+{
+    const parts = decode.split(",");
+    const data = {};
+    parts.forEach(part => {
+        const [key, value] = part.split(":");
+        data[key] = value;
+    });
+    return data;
 }
 
 document.getElementById("scan-qr-btn").addEventListener("click", function () {
@@ -159,7 +171,7 @@ document.getElementById("scan-qr-btn").addEventListener("click", function () {
     modal.style.display = "flex";
     qrResult.innerText = "Initializing camera...";
 
-    let scanner = new Html5Qrcode("preview");
+    scanner = new Html5Qrcode("preview");
 
     previewBox.style.boxShadow = "0 0 20px #00fff6";
 
@@ -177,11 +189,11 @@ document.getElementById("scan-qr-btn").addEventListener("click", function () {
                 fetch("/scan_qr", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ qr_data: decoded })
+                    body: JSON.stringify({ qr_data: parse_decode(decoded) })
                 })
                 .then(r => r.json())
                 .then(data => {
-                    alert(data.message);
+                    alert(data.username + " " + data.email);
                     window.location.reload();
                 });
             });
@@ -200,7 +212,18 @@ document.getElementById("scan-qr-btn").addEventListener("click", function () {
 
 // Close scanner
 document.getElementById("close-scanner").addEventListener("click", function () {
-    location.reload();
+    
+
+    const modal = document.getElementById("qr-scanner");
+    const previewBox = document.getElementById("preview");
+    if (scanner) {
+        scanner.stop().catch(()=>{}).finally(() => {
+            try { scanner.clear(); } catch(e) {}
+            scanner = null;
+        });
+    }
+    previewBox.style.boxShadow = "";
+    modal.style.display = "none";
 });
 </script>
 
