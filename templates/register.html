@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div style="max-width: 400px; margin: 50px auto; background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.1);">
+    <h2 style="text-align: center; margin-bottom: 20px;">Register</h2>
+    <form method="POST" action="{{ url_for('register') }}">
+        <!-- Username -->
+        <div style="margin-bottom: 15px;">
+            <label for="username" style="display: block; font-weight: bold; margin-bottom: 5px;">Username:</label>
+            <input type="text" id="username" name="username" required
+                   style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 5px;">
+        </div>
+
+        <!-- Email -->
+        <div style="margin-bottom: 15px;">
+            <label for="email" style="display: block; font-weight: bold; margin-bottom: 5px;">Email:</label>
+            <input type="email" id="email" name="email" required
+                   style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 5px;">
+        </div>
+
+        <!-- Password -->
+        <div style="margin-bottom: 15px;">
+            <label for="password" style="display: block; font-weight: bold; margin-bottom: 5px;">Password:</label>
+            <input type="password" id="password" name="password" required
+                   style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 5px;">
+        </div>
+
+        <!-- Role selection -->
+        <div style="margin-bottom: 20px;">
+            <label for="role" style="display: block; font-weight: bold; margin-bottom: 5px;">Register as:</label>
+            <select id="role" name="role" required
+                    style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 5px;">
+                <option value="" disabled selected hidden>Select role</option>
+                <option value="student">Student</option>
+                <option value="admin">Admin</option>
+            </select>
+        </div>
+
+        <button type="submit"
+                style="background-color: #007bff; color: #fff; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; width: 100%;">
+            Register
+        </button>
+    </form>
+
+    <p style="text-align: center; margin-top: 15px;">Already have an account? <a href="{{ url_for('login') }}">Login here</a>.</p>
+</div>
+{% endblock %}

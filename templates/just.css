@@ -1,0 +1,10 @@
+body.font-small { font-size: 0.9rem; }
+body.font-medium { font-size: 1rem; }
+body.font-large { font-size: 1.1rem; }
+body.font-xlarge { font-size: 1.3rem; }
+
+/* Headings scale accordingly */
+body.font-small h1 { font-size: 1.4rem; }
+body.font-medium h1 { font-size: 1.6rem; }
+body.font-large h1 { font-size: 1.8rem; }
+body.font-xlarge h1 { font-size: 2rem; }

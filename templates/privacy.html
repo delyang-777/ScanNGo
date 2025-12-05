@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div style="max-width: 900px; margin: 0 auto; padding: 0; color: #fff; height: 100vh; display: flex; flex-direction: column;">
+
+    <!-- Fixed Header with Back Arrow -->
+    <div style="position: fixed; top: 0; left: 0; right: 0; 
+                display: flex; align-items: center; gap: 10px; 
+                padding: 15px; background: rgba(15,15,31,0.95); 
+                box-shadow: 0 2px 10px rgba(0,255,255,0.3); z-index: 999;">
+
+        <!-- Left Arrow -->
+        <a href="{{ url_for('admin_dashboard') }}" 
+           style="display: inline-flex; align-items: center; justify-content: center;
+                  padding: 8px 14px; background: linear-gradient(135deg, #00f6ff, #00fff6);
+                  color: #0f0f1f; font-weight: bold; font-size: 1.1em; border-radius: 30px;
+                  text-decoration: none; box-shadow: 0 0 6px #00f6ff, inset 0 0 10px #00fff6;">
+            &#8592;
+        </a>
+
+        <h2 style="color: #00f6ff; font-family: 'Orbitron', sans-serif; font-size: 2em;
+                   text-shadow: 0 0 6px #00f6ff, 0 0 10px #00fff6; margin: 0;">
+            Privacy Policy
+        </h2>
+    </div>
+
+    <!-- Scrollable Content -->
+    <div style="margin-top: 90px; padding: 30px; overflow-y: auto; flex: 1; line-height: 1.6; font-size: 1.05em;">
+        <p>This Privacy Policy explains how our system collects, uses, and protects personal information provided by users. 
+        We value your privacy and are committed to maintaining the confidentiality and security of your data.</p>
+
+        <h3 style="color: #00f6ff; text-shadow: 0 0 6px #00f6ff, 0 0 12px #00fff6;">1. Information We Collect</h3>
+        <p>We may collect basic user information such as your name, email address, and account credentials. 
+           For attendance and event tracking, we may also record scan logs, timestamps, and participation details.</p>
+
+        <h3 style="color: #00f6ff; text-shadow: 0 0 6px #00f6ff, 0 0 12px #00fff6;">2. How We Use Your Information</h3>
+        <p>Your information is used to manage system access, verify attendance, monitor activity logs, 
+           and improve overall functionality. We do not sell, rent, or share your personal data with unauthorized parties.</p>
+
+        <h3 style="color: #00f6ff; text-shadow: 0 0 6px #00f6ff, 0 0 12px #00fff6;">3. Data Security</h3>
+        <p>We implement appropriate technical measures to safeguard your information against unauthorized access, 
+           alteration, or disclosure. User passwords are securely hashed and stored.</p>
+
+        <h3 style="color: #00f6ff; text-shadow: 0 0 6px #00f6ff, 0 0 12px #00fff6;">4. Data Access and Control</h3>
+        <p>Users can request updates or deletion of their data by contacting the system administrator. 
+           Access to personal data is restricted to authorized personnel only.</p>
+
+        <h3 style="color: #00f6ff; text-shadow: 0 0 6px #00f6ff, 0 0 12px #00fff6;">5. Policy Updates</h3>
+        <p>We may revise this Privacy Policy periodically. Any changes will be communicated within the system 
+           or through user notifications.</p>
+
+        <h3 style="color: #00f6ff; text-shadow: 0 0 6px #00f6ff, 0 0 12px #00fff6;">6. Contact</h3>
+        <p>If you have questions or concerns about this Privacy Policy, please contact the administrator 
+           or system support team.</p>
+    </div>
+</div>
+
+<style>
+    body {
+        background-color: #0f0f1f;
+        font-family: 'Poppins', sans-serif;
+    }
+
+    a {
+        color: #00f6ff;
+        text-decoration: none;
+        transition: transform 0.2s ease, text-shadow 0.3s ease;
+    }
+    a:hover {
+        transform: scale(1.05);
+        text-shadow: 0 0 8px #00f6ff, 0 0 12px #00fff6;
+    }
+
+    @media (max-width: 500px) {
+        h2 { font-size: 1.6em !important; }
+        div[style*="line-height: 1.6"] { font-size: 1em !important; }
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="form-container">
+    <h2>Edit Event</h2>
+    <form method="POST">
+        <label>Event Name:</label>
+        <input type="text" name="title" value="{{ event.title }}" required>
+
+        <label>Description:</label>
+        <textarea name="description" required>{{ event.description }}</textarea>
+
+        <label>Date:</label>
+        <input type="date" name="event_date" value="{{ event.event_date }}" required>
+
+
+        <label>Location:</label>
+        <input type="text" name="location" value="{{ event.location }}" required>
+        <button type="submit" class="btn-action">Update Event</button>
+    </form>
+</div>
+
+<style>
+.form-container {
+    max-width: 700px;
+    margin: 30px auto;
+    padding: 20px;
+    background: rgba(15,15,31,0.9);
+    border-radius: 12px;
+    color: #fff;
+}
+input, textarea {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 12px;
+    border: 1px solid #00f6ff66;
+    border-radius: 8px;
+    background: #0f0f1f;
+    color: #fff;
+}
+.btn-action {
+    display: block;
+    width: 100%;
+    background: linear-gradient(135deg, #00ff85, #00d4ff);
+    color: #000;
+    padding: 10px;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.3s;
+}
+.btn-action:hover { opacity: 0.9; }
+</style>
+{% endblock %}

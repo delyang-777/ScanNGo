@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block content %}
+<div style="max-width: 500px; margin: 20px auto; padding: 20px; background: #0f0f1f; color: #00f6ff; border-radius: 12px; box-shadow: 0 0 8px #00f6ff;">
+    <h2>Add New Member</h2>
+    <form method="POST">
+        <label>Username:</label>
+        <input type="text" name="username" required style="width:100%; padding:8px; margin:5px 0;"><br>
+
+        <label>Email:</label>
+        <input type="email" name="email" required style="width:100%; padding:8px; margin:5px 0;"><br>
+
+        <!-- Add more fields here if needed -->
+
+        <button type="submit" style="padding:10px 20px; margin-top:10px; background:#00f6ff; color:#0f0f1f; font-weight:bold; border:none; border-radius:8px;">Add Member</button>
+    </form>
+</div>
+{% endblock %}

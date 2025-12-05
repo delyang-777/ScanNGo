@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="manage-container">
+    <a href="{{ url_for('manage_events') }}" class="back-arrow" title="Back">⬅️</a>
+    <h2 class="title">Add New Event</h2>
+
+    <form method="POST" class="event-form">
+        <input type="text" name="title" placeholder="Event Title" required>
+        <textarea name="description" placeholder="Description" required></textarea>
+        <input type="date" name="event_date" required>
+        <input type="text" name="location" placeholder="Location" required>
+        <button type="submit" class="btn-action">➕ Add Event</button>
+    </form>
+</div>
+
+<style>
+.manage-container {
+    max-width: 700px;
+    margin: 30px auto;
+    padding: 20px;
+    background: rgba(15,15,31,0.9);
+    border-radius: 12px;
+    color: #fff;
+}
+.title { text-align: center; margin-bottom: 20px; color: #00eaff; }
+.event-form input, .event-form textarea {
+    width: 100%; padding: 10px; margin-bottom: 12px;
+    border: 1px solid #00f6ff66; border-radius: 8px;
+    background: #0f0f1f; color: #fff;
+}
+.btn-action {
+    display: block; width: 100%;
+    background: linear-gradient(135deg, #00ff85, #00d4ff);
+    color: #000; padding: 10px; border: none;
+    border-radius: 8px; font-weight: bold;
+    cursor: pointer; transition: 0.3s;
+}
+.btn-action:hover { opacity: 0.9; }
+.back-arrow {
+    text-decoration: none; color: #00f6ff; font-size: 20px;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div style="min-height: 80vh; display: flex; flex-direction: column; align-items: center; padding: 40px 20px; background: #0f0f1f; color: #fff;">
+
+    <!-- Back Arrow -->
+    <a href="{{ url_for('manage_members') }}" 
+       style="align-self: flex-start; text-decoration: none; color: #00f6ff; font-weight: bold; font-size: 1.2em; margin-bottom: 20px;">
+       &#8592; Back
+    </a>
+
+    <!-- Title -->
+    <h2 style="font-family: 'Orbitron', sans-serif; color: #00f6ff; margin-bottom: 30px;">Edit Member</h2>
+
+    <!-- Flash messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div style="background: rgba(0,255,255,0.1); color:#00f6ff; padding: 10px 15px; border-radius: 6px; margin-bottom: 15px; text-align:center;">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Edit Form -->
+    <form method="POST" style="display: flex; flex-direction: column; gap: 20px; width: 100%; max-width: 400px;">
+
+        <div style="display: flex; flex-direction: column; gap: 5px;">
+            <label style="font-weight: 500;">Username:</label>
+            <input type="text" name="username" value="{{ member.username }}" required 
+                   style="padding: 10px; border-radius: 6px; border: none; background: #1a1a2e; color: #fff;">
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 5px;">
+            <label style="font-weight: 500;">Email:</label>
+            <input type="email" name="email" value="{{ member.email }}" required 
+                   style="padding: 10px; border-radius: 6px; border: none; background: #1a1a2e; color: #fff;">
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 5px;">
+            <label style="font-weight: 500;">Role:</label>
+            <select name="role" required 
+                    style="padding: 10px; border-radius: 6px; border: none; background: #1a1a2e; color: #fff;">
+                <option value="admin" {% if member.role == 'admin' %}selected{% endif %}>Admin</option>
+                <option value="student" {% if member.role == 'student' %}selected{% endif %}>Student</option>
+            </select>
+        </div>
+
+        <button type="submit" style="padding: 10px 20px; border: none; border-radius: 30px; background: linear-gradient(135deg, #00f6ff, #00fff6); color: #0f0f1f; font-weight: bold; cursor: pointer; transition: transform 0.2s;">
+            Update Member
+        </button>
+    </form>
+</div>
+{% endblock %}

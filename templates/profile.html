@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div style="min-height: 100vh; background: #0f0f1f; font-family: 'Poppins', sans-serif; display: flex; flex-direction: column; align-items: center;">
+
+    <!-- Fixed Header -->
+    <div style="position: fixed; top: 0; left: 0; right: 0;
+                display: flex; align-items: center; gap: 10px;
+                padding: 15px; background: rgba(15,15,31,0.95);
+                box-shadow: 0 2px 10px rgba(0,255,255,0.3); z-index: 999;">
+        
+        <a href="{{ url_for('student_dashboard') }}"
+           style="display: inline-flex; align-items: center; justify-content: center;
+                  padding: 8px 14px; background: linear-gradient(135deg, #00f6ff, #00fff6);
+                  color: #0f0f1f; font-weight: bold; font-size: 1.1em; border-radius: 30px;
+                  text-decoration: none; box-shadow: 0 0 6px #00f6ff, inset 0 0 10px #00fff6;">
+            &#8592;
+        </a>
+
+        <h2 style="color: #00f6ff; font-family: 'Orbitron', sans-serif; font-size: 2em;
+                   text-shadow: 0 0 6px #00f6ff, 0 0 10px #00fff6; margin: 0; white-space: nowrap;">
+            Manage Profile
+        </h2>
+    </div>
+
+    <!-- Spacer -->
+    <div style="height: 100px;"></div>
+
+    <div id="profileContainer" style="width: 100%; max-width: 800px; display: flex; flex-direction: column; gap: 15px;">
+
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div>
+                    {% for category, message in messages %}
+                        <div style="padding: 10px; border-radius: 8px; margin-bottom: 5px;
+                                    background: {% if category == 'success' %}#28a745{% else %}#ff4c4c{% endif %};
+                                    color: #0f0f1f;">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <!-- View Mode -->
+        <div id="viewProfile" style="background: #0f0f1f; border-radius: 15px; padding: 25px; box-shadow: 0 0 20px #00f6ff44;">
+            <p><strong>Username:</strong> {{ current_user.username }}</p>
+            <p><strong>Email:</strong> {{ current_user.email }}</p>
+            <p><strong>Full Name:</strong> {{ current_user.full_name }}</p>
+            <p><strong>Age:</strong> {{ current_user.age }}</p>
+            <p><strong>Year Level:</strong> {{ current_user.year_level }}</p>
+            <p><strong>Status:</strong> {{ current_user.status }}</p>
+            <p><strong>Citizenship:</strong> {{ current_user.citizenship }}</p>
+            <p><strong>Address:</strong> {{ current_user.address }}</p>
+            <p><strong>Place of Birth:</strong> {{ current_user.place_of_birth }}</p>
+            
+            <button id="editBtn" style="margin-top: 20px; padding: 12px; background: linear-gradient(135deg, #00ff85, #00d4ff);
+                    color: #0f0f1f; font-weight: bold; border-radius: 10px; border: none; cursor: pointer;
+                    box-shadow: 0 0 8px #00f6ff66;">✏️ Edit Profile</button>
+        </div>
+
+        <!-- Edit Mode (Initially Hidden) -->
+        <form id="editProfileForm" method="post" action="{{ url_for('submit_profile_update') }}" style="display: none; flex-direction: column; gap: 15px;
+              background: #0f0f1f; border-radius: 15px; padding: 25px; box-shadow: 0 0 20px #00f6ff44;">
+            <label>Username:
+                <input name="username" value="{{ current_user.username }}" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #00f6ff44; background: #0f0f1f; color: #fff;">
+            </label>
+            <label>Email:
+                <input name="email" value="{{ current_user.email }}" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #00f6ff44; background: #0f0f1f; color: #fff;">
+            </label>
+            <label>Full Name:
+                <input name="full_name" value="{{ current_user.full_name }}" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #00f6ff44; background: #0f0f1f; color: #fff;">
+            </label>
+            <label>Age:
+                <input type="number" name="age" value="{{ current_user.age }}" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #00f6ff44; background: #0f0f1f; color: #fff;">
+            </label>
+            <label>Year Level:
+                <input name="year_level" value="{{ current_user.year_level }}" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #00f6ff44; background: #0f0f1f; color: #fff;">
+            </label>
+            <label>Status:
+                <input name="status" value="{{ current_user.status }}" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #00f6ff44; background: #0f0f1f; color: #fff;">
+            </label>
+            <label>Citizenship:
+                <input name="citizenship" value="{{ current_user.citizenship }}" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #00f6ff44; background: #0f0f1f; color: #fff;">
+            </label>
+            <label>Address:
+                <input name="address" value="{{ current_user.address }}" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #00f6ff44; background: #0f0f1f; color: #fff;">
+            </label>
+            <label>Place of Birth:
+                <input name="place_of_birth" value="{{ current_user.place_of_birth }}" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #00f6ff44; background: #0f0f1f; color: #fff;">
+            </label>
+
+            <button type="submit" style="padding: 12px; background: linear-gradient(135deg, #00ff85, #00d4ff);
+                   color: #0f0f1f; font-weight: bold; border-radius: 10px; border: none;
+                   cursor: pointer; box-shadow: 0 0 8px #00f6ff66;">💾 Submit to Admin</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    const editBtn = document.getElementById('editBtn');
+    const viewProfile = document.getElementById('viewProfile');
+    const editForm = document.getElementById('editProfileForm');
+
+    editBtn.addEventListener('click', () => {
+        viewProfile.style.display = 'none';
+        editForm.style.display = 'flex';
+    });
+</script>
+
+<style>
+    input:focus { outline: none; border-color: #00fff6; box-shadow: 0 0 8px #00f6ff; }
+    button:hover, a:hover { transform: scale(1.05); box-shadow: 0 0 12px #00ff85, inset 0 0 10px #00d4ff; }
+</style>
+{% endblock %}

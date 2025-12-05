@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+{% block content %}
+<div style="max-width: 500px; margin: 50px auto;">
+    <h2>Edit Student Profile</h2>
+    <form method="post">
+        <label>Username: <input type="text" name="username" value="{{ student.username }}" required></label><br><br>
+        <label>Email: <input type="email" name="email" value="{{ student.email }}" required></label><br><br>
+        <button type="submit" style="padding:8px 16px; background:#ff8c00; border:none; border-radius:6px;">Update</button>
+    </form>
+</div>
+{% endblock %}

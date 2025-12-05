@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% block content %}
+<div style="max-width: 500px; margin: 50px auto;">
+    <h2>Add Student Profile</h2>
+    <form method="post">
+        <label>Username: <input type="text" name="username" required></label><br><br>
+        <label>Email: <input type="email" name="email" required></label><br><br>
+        <label>Password: <input type="password" name="password" required></label><br><br>
+        <button type="submit" style="padding: 8px 16px; background:#00d4ff; border:none; border-radius:6px;">Add Student</button>
+    </form>
+</div>
+{% endblock %}
