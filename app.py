@@ -189,6 +189,37 @@ def register():
         return redirect(url_for('login'))
     return render_template('register.html')
 
+@app.route('/fetch_events', methods=['GET'])
+@login_required
+def fetch_events():
+    if current_user.role != 'admin':
+        flash("Access denied.", "danger")
+        return redirect(url_for('home'))
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    # Upcoming events = today and future events
+    cursor.execute("""
+        SELECT * FROM events
+        WHERE 1=1
+        ORDER BY event_date ASC
+    """)
+    event_lists = cursor.fetchall()
+
+    # # Recent (past) events = dates before today
+    # cursor.execute("""
+    #     SELECT * FROM events
+    #     WHERE event_date < CURDATE()
+    #     ORDER BY event_date DESC
+    # """)
+    # recent_events = cursor.fetchall()
+
+    cursor.close()
+    conn.close()
+    
+    return jsonify(event_lists)
+
 # --- Manage Events ---
 @app.route('/manage_events', methods=['GET'])
 @login_required
@@ -224,6 +255,18 @@ def manage_events():
         upcoming_events=upcoming_events,
         recent_events=recent_events
     )
+    
+def add_event_to_attendance(event_id, user_id):
+    if current_user.role != 'admin':
+        flash("Access denied.", "danger")
+        return redirect(url_for('home'))
+    
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    
+    cursor.execute("""
+        INSERT INTO attendance (user_id, event_id, checked_at)
+    """)
 
 
 # --- Add Event ---
@@ -849,6 +892,7 @@ def scan_qr_result():
 
     # Parse QR format: "ID:1, Name:John"
     user_id = None
+    
     if isinstance(qr_data, dict):
         user_id = qr_data.get('ID')
     elif isinstance(qr_data, str):
@@ -861,20 +905,34 @@ def scan_qr_result():
         user_id = int(user_id)
     except Exception:
         return jsonify({"error": "Invalid or missing ID in QR data."}), 400
+    
+    # user = User.query.get(user_id)
+    user = load_user(user_id)
 
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT id, username, email FROM users WHERE id=%s", (user_id,))
-    user = cursor.fetchone()
-    cursor.close()
-    conn.close()
+    # conn = get_db_connection()
+    # cursor = conn.cursor(dictionary=True)
+    # cursor.execute("SELECT id, username, email FROM users WHERE id=%s", (user_id,))
+    # user = cursor.fetchone()
+    # cursor.close()
+    # conn.close()
 
     if not user:
         return jsonify({"error": "User not found."}), 404
     
-    # print(user)
+    print(f"this is user : {user}")
 
-    return jsonify(user)
+    return jsonify({
+        "id": user.id,
+        "username": user.username,
+        "email": user.email,
+        # "full_name": user.full_name,
+        # "age": user.age,
+        # "year_level": user.year_level,
+        # "status": user.status,
+        # "citizenship": user.citizenship,
+        # "address": user.address,
+        # "place_of_birth": user.place_of_birth
+    })
     
 
 
@@ -910,6 +968,10 @@ def reject_update(update_id):
     db.session.commit()
     flash("Profile update rejected.", "danger")
     return redirect(url_for('manage_members'))
+
+def add_to_attendance(user_info_dict):
+    pass
+
 
 
 ngrok_url = "https://delmar-hesperidate-swimmingly.ngrok-free.dev/check_attendance"

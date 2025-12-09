@@ -27,6 +27,14 @@
     <!-- Spacer -->
     <div style="height: 70px;"></div>
 
+    <div style="margin-bottom: 20px;">
+        <label for="role" style="display: block; font-weight: bold; margin-bottom: 5px;">Select Event:</label>
+        <select id="events" name="events" required
+                style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 5px;">
+                <!-- Event options here -->
+        </select>
+    </div>
+
     <!-- Buttons -->
     <div style="padding: 0 10px; margin-bottom: 10px;">
         <div style="
@@ -72,7 +80,7 @@
                         <td style="padding:8px;">{{ record.checked_at }}</td>
                     </tr>
                     {% else %}
-                    <tr>
+                    <tr id="records-display">
                         <td colspan="3" style="text-align:center; color:#aaa; padding:15px;">No records found.</td>
                     </tr>
                     {% endfor %}
@@ -145,7 +153,30 @@
 <script src="https://unpkg.com/html5-qrcode"></script>
 
 <script>
+const events = document.getElementById(events)
 let scanner = null;
+
+// fetch event
+document.addEventListener("DOMContentLoaded", async function () {
+    try {
+        const response = await fetch("/fetch_events", {
+            method: 'GET',
+            headers: {
+                'Content-Type' : 'application/json'
+            },
+        })
+
+        const result = await response.json()
+        
+        result.forEach(event => {
+            // events.app
+            // naa pa ko e add diring dapita HAHAHA
+        })
+    } catch (err) {
+        console.error(`Ann error occurs ${err}`)
+    }
+})
+
 // Beep sound
 function playBeep() {
     const audio = new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg");
@@ -167,6 +198,7 @@ document.getElementById("scan-qr-btn").addEventListener("click", function () {
     const modal = document.getElementById("qr-scanner");
     const qrResult = document.getElementById("qr-result");
     const previewBox = document.getElementById("preview");
+    const records = document.getElementById("records-display");
 
     modal.style.display = "flex";
     qrResult.innerText = "Initializing camera...";
@@ -185,7 +217,15 @@ document.getElementById("scan-qr-btn").addEventListener("click", function () {
 
             qrResult.innerText = "Scanned: " + decoded;
 
-            scanner.stop().then(() => {
+            scanner.stop()
+            // .then(() => {
+            //    return scanner.clear().catch(()=>{});
+            // })
+            .then(() => {
+                scanner = null;
+                modal.style.display = "none";
+                previewBox.style.boxShadow = "";
+                // qrResult.innerText = "";
                 fetch("/scan_qr", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -193,8 +233,20 @@ document.getElementById("scan-qr-btn").addEventListener("click", function () {
                 })
                 .then(r => r.json())
                 .then(data => {
-                    alert(data.username + " " + data.email);
-                    window.location.reload();
+                    alert(data.full_name + " " + data.email);
+                    records.innerHTML = "";
+                    records.innerHTML = `
+                        <td colspan="1" style="text-align:center; color:#aaa; padding:15px;">${data.id}</td>
+                        <td colspan="1" style="text-align:center; color:#aaa; padding:15px;">${data.full_name}</td>
+                        <td colspan="1" style="text-align:center; color:#aaa; padding:15px;">${data.email}</td>
+                    `;
+                })
+                .catch(err => {
+                    console.error("Scanner/Fetch error:", err);
+                    // ensure modal gets closed and scanner cleared on error
+                    try { scanner && scanner.clear(); } catch(e){}
+                    scanner = null;
+                    modal.style.display = "none";
                 });
             });
         },
@@ -212,8 +264,6 @@ document.getElementById("scan-qr-btn").addEventListener("click", function () {
 
 // Close scanner
 document.getElementById("close-scanner").addEventListener("click", function () {
-    
-
     const modal = document.getElementById("qr-scanner");
     const previewBox = document.getElementById("preview");
     if (scanner) {
@@ -222,7 +272,7 @@ document.getElementById("close-scanner").addEventListener("click", function () {
             scanner = null;
         });
     }
-    previewBox.style.boxShadow = "";
+    // previewBox.style.boxShadow = "";
     modal.style.display = "none";
 });
 </script>
