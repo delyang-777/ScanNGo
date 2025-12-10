@@ -56,13 +56,13 @@ class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(150), unique=True)
     email = db.Column(db.String(150), unique=True)
-    # full_name = db.Column(db.String(150))
-    # age = db.Column(db.Integer)
-    # year_level = db.Column(db.String(50))
-    # status = db.Column(db.String(50))
-    # citizenship = db.Column(db.String(100))
-    # address = db.Column(db.String(255))
-    # place_of_birth = db.Column(db.String(150))
+    full_name = db.Column(db.String(150))
+    age = db.Column(db.Integer)
+    year_level = db.Column(db.String(50))
+    status = db.Column(db.String(50))
+    citizenship = db.Column(db.String(100))
+    address = db.Column(db.String(255))
+    place_of_birth = db.Column(db.String(150))
     role = db.Column(db.String(50), nullable=False, default="user")
     
     
@@ -98,7 +98,19 @@ def load_user(user_id):
     cursor.close()
     conn.close()
     if row:
-        return User(id=row['id'], username=row['username'], email=row['email'], role=row['role'])
+        user_obj = User()
+        user_obj.id = row['id']
+        user_obj.username = row['username']
+        user_obj.email = row['email']
+        user_obj.role = row['role']
+        user_obj.full_name = row.get('full_name', '')
+        user_obj.age = row.get('age')
+        user_obj.year_level = row.get('year_level', '')
+        user_obj.status = row.get('status', '')
+        user_obj.citizenship = row.get('citizenship', '')
+        user_obj.address = row.get('address', '')
+        user_obj.place_of_birth = row.get('place_of_birth', '')
+        return user_obj
     return None
 
 # --- Home ---
@@ -165,6 +177,7 @@ def logout():
 def register():
     if request.method == 'POST':
         username = request.form['username']
+        full_name = request.form.get('full_name', '')
         email = request.form['email']
         password = generate_password_hash(request.form['password'])
         role = request.form['role']
@@ -179,8 +192,8 @@ def register():
             return redirect(url_for('login'))
 
         cursor.execute(
-            'INSERT INTO users (username, email, password_hash, role, approved, active) VALUES (%s,%s,%s,%s,1,1)',
-            (username, email, password, role)
+            'INSERT INTO users (username, full_name, email, password_hash, role, approved, active) VALUES (%s,%s,%s,%s,%s,1,1)',
+            (username, full_name, email, password, role)
         )
         conn.commit()
         cursor.close()
@@ -441,7 +454,11 @@ def manage_members():
     members = cursor.fetchall()
     cursor.close()
     conn.close()
-    return render_template('manage_members.html', members=members)
+    
+    # Get pending profile updates
+    pending_updates = PendingProfileUpdate.query.filter_by(approved=False).all()
+    
+    return render_template('manage_members.html', members=members, pending_updates=pending_updates)
 
 
 @app.route('/admin/members/add', methods=['GET', 'POST'])
@@ -572,23 +589,8 @@ def check_attendance():
     if current_user.role != 'admin':
         flash("Access denied.", "danger")
         return redirect(url_for('home'))
-
-    conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
     
-    cursor.execute("""
-        SELECT a.id, u.username AS member_name, e.title AS event_title, a.checked_at
-        FROM attendance a
-        JOIN users u ON a.user_id = u.id
-        JOIN events e ON a.event_id = e.id
-        ORDER BY a.checked_at DESC
-    """)
-    
-    records = cursor.fetchall()
-    cursor.close()
-    conn.close()
-    
-    return render_template('check_attendance.html', records=records)
+    return render_template('check_attendance.html')
 
 
 @app.route('/admin/members/checkin', methods=['POST'])
@@ -639,9 +641,9 @@ def checkin_member():
     return jsonify({"message": f"Attendance recorded for {student[1]}!"})
 
 
-@app.route('/export_attendance/<file_type>')
+@app.route('/export_attendance/<file_type>/<int:event_id>')
 @login_required
-def export_attendance(file_type):
+def export_attendance(file_type, event_id):
     if current_user.role != 'admin':
         flash("Access denied.", "danger")
         return redirect(url_for('home'))
@@ -653,8 +655,9 @@ def export_attendance(file_type):
         FROM attendance a
         JOIN users u ON a.user_id = u.id
         JOIN events e ON a.event_id = e.id
+        WHERE a.event_id = %s
         ORDER BY a.checked_at DESC
-    """)
+    """, (event_id,))
     records = cursor.fetchall()
     cursor.close()
     conn.close()
@@ -798,33 +801,36 @@ def personal_qrcode():
 @app.route('/profile', methods=['GET', 'POST'])
 @login_required
 def profile():
-    if request.method == 'POST':
-        username = request.form.get('username')
-        email = request.form.get('email')
+    # Fetch fresh user data from database
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    cursor.execute("SELECT * FROM users WHERE id=%s", (current_user.id,))
+    user_data = cursor.fetchone()
+    cursor.close()
+    conn.close()
+    
+    if not user_data:
+        flash('User not found.', 'danger')
+        return redirect(url_for('home'))
+    
+    # Update current_user with fresh data
+    current_user.username = user_data.get('username', '')
+    current_user.email = user_data.get('email', '')
+    current_user.full_name = user_data.get('full_name', '')
+    current_user.age = user_data.get('age')
+    current_user.year_level = user_data.get('year_level', '')
+    current_user.status = user_data.get('status', '')
+    current_user.citizenship = user_data.get('citizenship', '')
+    current_user.address = user_data.get('address', '')
+    current_user.place_of_birth = user_data.get('place_of_birth', '')
+    
+    # Check for pending updates
+    pending_update = PendingProfileUpdate.query.filter_by(
+        user_id=current_user.id, 
+        approved=False
+    ).first()
 
-        conn = get_db_connection()
-        cursor = conn.cursor()
-
-        try:
-            cursor.execute("""
-                UPDATE users SET username=%s, email=%s WHERE id=%s
-            """, (username, email, current_user.id))
-            conn.commit()
-
-            # Update current_user object for session
-            current_user.username = username
-            current_user.email = email
-
-            flash('Profile updated successfully!', 'success')
-        except Exception as e:
-            flash(f"Error updating profile: {str(e)}", 'danger')
-        finally:
-            cursor.close()
-            conn.close()
-
-        return redirect(url_for('profile'))
-
-    return render_template('profile.html')
+    return render_template('profile.html', user=user_data, pending_update=pending_update)
 
 
 @app.route('/update_profile', methods=['POST'])
@@ -859,36 +865,65 @@ def update_profile():
 @app.route('/submit_profile_update', methods=['POST'])
 @login_required
 def submit_profile_update():
-    # Check if there is already a pending update
-    pending = PendingProfileUpdate.query.filter_by(user_id=current_user.id, approved=False).first()
-    if pending:
-        flash("You already have a pending update. Please wait for admin approval.", "danger")
+    # Check if there's already a pending update
+    existing_pending = PendingProfileUpdate.query.filter_by(
+        user_id=current_user.id, 
+        approved=False
+    ).first()
+    
+    if existing_pending:
+        flash("You already have a pending profile update awaiting admin approval.", "warning")
         return redirect(url_for('profile'))
-
-    # Create a new pending update
-    pending_update = PendingProfileUpdate(
-        user_id=current_user.id,
-        username=request.form['username'],
-        email=request.form['email'],
-        full_name=request.form['full_name'],
-        age=request.form['age'],
-        year_level=request.form['year_level'],
-        status=request.form['status'],
-        citizenship=request.form['citizenship'],
-        address=request.form['address'],
-        place_of_birth=request.form['place_of_birth']
-    )
-
-    db.session.add(pending_update)
-    db.session.commit()
-    flash("Profile update submitted to admin for approval.", "success")
+    
+    try:
+        username = request.form.get('username')
+        email = request.form.get('email')
+        full_name = request.form.get('full_name')
+        age = request.form.get('age')
+        year_level = request.form.get('year_level')
+        status = request.form.get('status')
+        citizenship = request.form.get('citizenship')
+        address = request.form.get('address')
+        place_of_birth = request.form.get('place_of_birth')
+        
+        # Create a pending update for admin approval
+        pending_update = PendingProfileUpdate(
+            user_id=current_user.id,
+            username=username,
+            email=email,
+            full_name=full_name,
+            age=int(age) if age else None,
+            year_level=year_level,
+            status=status,
+            citizenship=citizenship,
+            address=address,
+            place_of_birth=place_of_birth,
+            role=current_user.role,
+            approved=False
+        )
+        
+        db.session.add(pending_update)
+        db.session.commit()
+        
+        flash("Profile update submitted for admin approval!", "success")
+    except Exception as e:
+        flash(f"Error submitting profile update: {str(e)}", "danger")
+    
     return redirect(url_for('profile'))
 
 
 @app.route('/scan_qr', methods=['POST'])
+@login_required
 def scan_qr_result():
+    if current_user.role != 'admin':
+        return jsonify({"error": "Access denied"}), 403
+
     data = request.get_json() or {}
     qr_data = data.get('qr_data', '')
+    event_id = data.get('event_id')
+
+    if not event_id:
+        return jsonify({"error": "Event not selected"}), 400
 
     # Parse QR format: "ID:1, Name:John"
     user_id = None
@@ -905,68 +940,121 @@ def scan_qr_result():
         user_id = int(user_id)
     except Exception:
         return jsonify({"error": "Invalid or missing ID in QR data."}), 400
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
     
-    # user = User.query.get(user_id)
-    user = load_user(user_id)
-
-    # conn = get_db_connection()
-    # cursor = conn.cursor(dictionary=True)
-    # cursor.execute("SELECT id, username, email FROM users WHERE id=%s", (user_id,))
-    # user = cursor.fetchone()
-    # cursor.close()
-    # conn.close()
-
+    # Check if user exists
+    cursor.execute("SELECT * FROM users WHERE id=%s", (user_id,))
+    user = cursor.fetchone()
     if not user:
-        return jsonify({"error": "User not found."}), 404
-    
-    print(f"this is user : {user}")
+        cursor.close()
+        conn.close()
+        return jsonify({"error": "User not found"}), 404
+
+    # Check if already checked in for this event
+    cursor.execute(
+        "SELECT * FROM attendance WHERE user_id=%s AND event_id=%s",
+        (user_id, event_id)
+    )
+    if cursor.fetchone():
+        cursor.close()
+        conn.close()
+        return jsonify({"error": "Already checked in for this event"}), 400
+
+    # Insert attendance record
+    cursor.execute(
+        "INSERT INTO attendance (user_id, event_id, checked_at) VALUES (%s, %s, NOW())",
+        (user_id, event_id)
+    )
+    conn.commit()
+    cursor.close()
+    conn.close()
 
     return jsonify({
-        "id": user.id,
-        "username": user.username,
-        "email": user.email,
-        # "full_name": user.full_name,
-        # "age": user.age,
-        # "year_level": user.year_level,
-        # "status": user.status,
-        # "citizenship": user.citizenship,
-        # "address": user.address,
-        # "place_of_birth": user.place_of_birth
+        "success": True,
+        "id": user_id,
+        "full_name": user.get('username', 'N/A'),
+        "email": user.get('email', 'N/A')
     })
+
+
+@app.route('/fetch_attendance_by_event/<int:event_id>', methods=['GET'])
+@login_required
+def fetch_attendance_by_event(event_id):
+    if current_user.role != 'admin':
+        return jsonify({"error": "Access denied"}), 403
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+    
+    cursor.execute("""
+        SELECT a.id, a.user_id, u.full_name, u.age, u.year_level, u.status, 
+               u.citizenship, u.address, u.place_of_birth, a.checked_at
+        FROM attendance a
+        JOIN users u ON a.user_id = u.id
+        WHERE a.event_id = %s
+        ORDER BY a.checked_at DESC
+    """, (event_id,))
+    
+    records = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    
+    return jsonify(records)
     
 
 
 @app.route('/approve_update/<int:update_id>', methods=['POST'])
 @login_required
 def approve_update(update_id):
+    if current_user.role != 'admin':
+        flash("Access denied.", "danger")
+        return redirect(url_for('home'))
+    
     update = PendingProfileUpdate.query.get_or_404(update_id)
-    user = User.query.get(update.user_id)
-
-    # Update user info
-    user.username = update.username
-    user.email = update.email
-    user.full_name = update.full_name
-    user.age = update.age
-    user.year_level = update.year_level
-    user.status = update.status
-    user.citizenship = update.citizenship
-    user.address = update.address
-    user.place_of_birth = update.place_of_birth
-
-    # Mark as approved
-    update.approved = True
-    db.session.commit()
-    flash(f"{user.username}'s profile update approved.", "success")
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    try:
+        # Update user info in MySQL database
+        cursor.execute("""
+            UPDATE users 
+            SET username=%s, email=%s, full_name=%s, age=%s, year_level=%s, 
+                status=%s, citizenship=%s, address=%s, place_of_birth=%s
+            WHERE id=%s
+        """, (update.username, update.email, update.full_name, update.age, 
+              update.year_level, update.status, update.citizenship, 
+              update.address, update.place_of_birth, update.user_id))
+        
+        conn.commit()
+        
+        # Delete the pending update
+        db.session.delete(update)
+        db.session.commit()
+        
+        flash(f"Profile update approved for {update.username}!", "success")
+    except Exception as e:
+        flash(f"Error approving update: {str(e)}", "danger")
+    finally:
+        cursor.close()
+        conn.close()
+    
     return redirect(url_for('manage_members'))
 
 
 @app.route('/reject_update/<int:update_id>', methods=['POST'])
 @login_required
 def reject_update(update_id):
+    if current_user.role != 'admin':
+        flash("Access denied.", "danger")
+        return redirect(url_for('home'))
+    
     update = PendingProfileUpdate.query.get_or_404(update_id)
     db.session.delete(update)
     db.session.commit()
-    flash("Profile update rejected.", "danger")
+    flash("Profile update rejected.", "warning")
     return redirect(url_for('manage_members'))
 
 def add_to_attendance(user_info_dict):
