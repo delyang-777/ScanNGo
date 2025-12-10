@@ -43,8 +43,8 @@
             gap: 10px;
             justify-content: center;
         ">
-            <a href="{{ url_for('export_attendance', file_type='excel') }}" class="neon-btn" style="flex: 1 1 45%; text-align:center;">Export to Excel</a>
-            <a href="{{ url_for('export_attendance', file_type='pdf') }}" class="neon-btn" target="_blank" style="flex: 1 1 45%; text-align:center;">Export to PDF</a>
+            <button id="export-excel-btn" class="neon-btn" style="flex: 1 1 45%; text-align:center;">Export to Excel</button>
+            <button id="export-pdf-btn" class="neon-btn" style="flex: 1 1 45%; text-align:center;">Export to PDF</button>
             <button id="scan-qr-btn" class="neon-btn" style="flex: 1 1 100%; text-align:center;">Scan QR</button>
         </div>
     </div>
@@ -67,23 +67,21 @@
                 <thead>
                     <tr style="background:#00f6ff; color:#0f0f1f; position:sticky; top:0;">
                         <th style="padding:8px;">ID</th>
-                        <th style="padding:8px;">Name</th>
+                        <th style="padding:8px;">Full Name</th>
+                        <th style="padding:8px;">Age</th>
+                        <th style="padding:8px;">Year Level</th>
+                        <th style="padding:8px;">Status</th>
+                        <th style="padding:8px;">Citizenship</th>
+                        <th style="padding:8px;">Address</th>
+                        <th style="padding:8px;">Place of Birth</th>
                         <th style="padding:8px;">Checked At</th>
                     </tr>
                 </thead>
 
                 <tbody>
-                    {% for record in records %}
-                    <tr style="border-bottom:1px solid #00f6ff33;">
-                        <td style="padding:8px;">{{ record.user_id }}</td>
-                        <td style="padding:8px;">{{ record.userName }}</td>
-                        <td style="padding:8px;">{{ record.checked_at }}</td>
-                    </tr>
-                    {% else %}
                     <tr id="records-display">
-                        <td colspan="3" style="text-align:center; color:#aaa; padding:15px;">No records found.</td>
+                        <td colspan="9" style="text-align:center; color:#aaa; padding:15px;">Please select an event to view attendance.</td>
                     </tr>
-                    {% endfor %}
                 </tbody>
             </table>
         </div>
@@ -91,12 +89,11 @@
 
     <!-- Scanner Modal -->
     <div id="qr-scanner" style="
-        display:none;
+        display: none;
         position: fixed;
         inset: 0;
         background: rgba(0,0,0,0.85);
         z-index: 1000;
-        display: flex;
         flex-direction: column;
         align-items: center;
         gap: 12px;
@@ -153,7 +150,7 @@
 <script src="https://unpkg.com/html5-qrcode"></script>
 
 <script>
-const events = document.getElementById(events)
+const events = document.getElementById("events");
 let scanner = null;
 
 // fetch event
@@ -168,14 +165,62 @@ document.addEventListener("DOMContentLoaded", async function () {
 
         const result = await response.json()
         
+        // Clear existing options first
+        events.innerHTML = '<option value="">-- Select an Event --</option>';
+        
         result.forEach(event => {
-            // events.app
-            // naa pa ko e add diring dapita HAHAHA
+            const option = document.createElement('option');
+            option.value = event.id; // or event.event_id depending on your API response
+            option.textContent = event.title; // or event.event_name depending on your API response
+            events.appendChild(option);
         })
     } catch (err) {
         console.error(`Ann error occurs ${err}`)
     }
 })
+
+// Fetch attendance when event is selected
+events.addEventListener('change', async function() {
+    const eventId = this.value;
+    if (!eventId) {
+        // Clear table if no event selected
+        const tbody = document.querySelector('tbody');
+        tbody.innerHTML = '<tr id="records-display"><td colspan="3" style="text-align:center; color:#aaa; padding:15px;">Please select an event.</td></tr>';
+        return;
+    }
+
+    try {
+        const response = await fetch(`/fetch_attendance_by_event/${eventId}`);
+        const records = await response.json();
+        
+        const tbody = document.querySelector('tbody');
+        tbody.innerHTML = '';
+        
+        if (records.length === 0) {
+            tbody.innerHTML = '<tr id="records-display"><td colspan="9" style="text-align:center; color:#aaa; padding:15px;">No attendance records for this event.</td></tr>';
+        } else {
+            records.forEach(record => {
+                const row = document.createElement('tr');
+                row.style.borderBottom = '1px solid #00f6ff33';
+                row.innerHTML = `
+                    <td style="padding:8px;">${record.user_id}</td>
+                    <td style="padding:8px;">${record.full_name || 'N/A'}</td>
+                    <td style="padding:8px;">${record.age || 'N/A'}</td>
+                    <td style="padding:8px;">${record.year_level || 'N/A'}</td>
+                    <td style="padding:8px;">${record.status || 'N/A'}</td>
+                    <td style="padding:8px;">${record.citizenship || 'N/A'}</td>
+                    <td style="padding:8px;">${record.address || 'N/A'}</td>
+                    <td style="padding:8px;">${record.place_of_birth || 'N/A'}</td>
+                    <td style="padding:8px;">${record.checked_at}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+    } catch (err) {
+        console.error('Error fetching attendance:', err);
+        alert('Failed to fetch attendance records');
+    }
+});
 
 // Beep sound
 function playBeep() {
@@ -194,22 +239,55 @@ function parse_decode(decode)
     return data;
 }
 
-document.getElementById("scan-qr-btn").addEventListener("click", function () {
+document.getElementById("scan-qr-btn").addEventListener("click", async function () {
     const modal = document.getElementById("qr-scanner");
     const qrResult = document.getElementById("qr-result");
     const previewBox = document.getElementById("preview");
     const records = document.getElementById("records-display");
 
+    // Check if an event is selected
+    const selectedEventId = events.value;
+    if (!selectedEventId) {
+        alert('Please select an event first before scanning QR codes!');
+        return;
+    }
+
+    // Check if site is secure (HTTPS or localhost)
+    const isSecure = window.location.protocol === 'https:' || 
+                     window.location.hostname === 'localhost' || 
+                     window.location.hostname === '127.0.0.1';
+    
+    if (!isSecure) {
+        alert('Camera access requires HTTPS connection!\n\nYou are currently on HTTP. Please:\n1. Access via https:// instead of http://\n2. Or use localhost/127.0.0.1 for testing');
+        return;
+    }
+
     modal.style.display = "flex";
     qrResult.innerText = "Initializing camera...";
 
-    scanner = new Html5Qrcode("preview");
+    try {
+        scanner = new Html5Qrcode("preview");
+        previewBox.style.boxShadow = "0 0 20px #00fff6";
 
-    previewBox.style.boxShadow = "0 0 20px #00fff6";
+        // Get available cameras
+        const devices = await Html5Qrcode.getCameras();
+        
+        if (!devices || devices.length === 0) {
+            throw new Error("No cameras found on this device");
+        }
 
-    scanner.start(
-        { facingMode: "environment" },
-        { fps: 10, qrbox: { width: 250, height: 250 } },
+        // Use the back camera if available, otherwise use first camera
+        const cameraId = devices.length > 1 ? devices[devices.length - 1].id : devices[0].id;
+        
+        const config = { 
+            fps: 10, 
+            qrbox: { width: 250, height: 250 },
+            aspectRatio: 1.0
+        };
+        
+        await scanner.start(
+            cameraId,
+            config,
 
         function(decoded) {
             playBeep();
@@ -225,24 +303,36 @@ document.getElementById("scan-qr-btn").addEventListener("click", function () {
                 scanner = null;
                 modal.style.display = "none";
                 previewBox.style.boxShadow = "";
-                // qrResult.innerText = "";
+                
+                const selectedEventId = events.value;
+                if (!selectedEventId) {
+                    alert('Please select an event first!');
+                    return;
+                }
+                
                 fetch("/scan_qr", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ qr_data: parse_decode(decoded) })
+                    body: JSON.stringify({ 
+                        qr_data: parse_decode(decoded),
+                        event_id: selectedEventId
+                    })
                 })
                 .then(r => r.json())
                 .then(data => {
-                    alert(data.full_name + " " + data.email);
-                    records.innerHTML = "";
-                    records.innerHTML = `
-                        <td colspan="1" style="text-align:center; color:#aaa; padding:15px;">${data.id}</td>
-                        <td colspan="1" style="text-align:center; color:#aaa; padding:15px;">${data.full_name}</td>
-                        <td colspan="1" style="text-align:center; color:#aaa; padding:15px;">${data.email}</td>
-                    `;
+                    if (data.error) {
+                        alert(data.error);
+                        return;
+                    }
+                    
+                    alert(`Attendance recorded: ${data.full_name}`);
+                    
+                    // Refresh the attendance list for the selected event
+                    events.dispatchEvent(new Event('change'));
                 })
                 .catch(err => {
                     console.error("Scanner/Fetch error:", err);
+                    alert('Failed to record attendance');
                     // ensure modal gets closed and scanner cleared on error
                     try { scanner && scanner.clear(); } catch(e){}
                     scanner = null;
@@ -251,15 +341,38 @@ document.getElementById("scan-qr-btn").addEventListener("click", function () {
             });
         },
 
-        function(error) { }
-    )
-    .then(() => {
+        function(error) { 
+            // Ignore decode errors during scanning
+        }
+        );
+        
         qrResult.innerText = "Align QR code in the box";
         previewBox.style.boxShadow = "0 0 12px #00fff6, inset 0 0 20px #00fff6";
-    })
-    .catch(() => {
-        qrResult.innerText = "Camera failed. Check permissions.";
-    });
+        
+    } catch (err) {
+        console.error("Camera error:", err);
+        qrResult.innerText = "Camera failed: " + err.message;
+        
+        let errorMsg = "Unable to access camera.\n\n";
+        if (err.name === 'NotAllowedError' || err.message.includes('Permission')) {
+            errorMsg += "Camera permission was denied. Please:\n1. Click the camera icon in your browser's address bar\n2. Allow camera access\n3. Reload the page and try again";
+        } else if (err.name === 'NotFoundError' || err.message.includes('No cameras')) {
+            errorMsg += "No camera found on this device.\nPlease ensure your device has a working camera.";
+        } else if (err.name === 'NotReadableError') {
+            errorMsg += "Camera is already in use by another application.\nPlease close other apps using the camera and try again.";
+        } else if (err.name === 'OverconstrainedError') {
+            errorMsg += "Camera doesn't meet requirements.\nTrying with different settings...";
+        } else {
+            errorMsg += "Error: " + err.message + "\n\nPlease:\n1. Check camera permissions\n2. Ensure HTTPS connection (required for camera access)\n3. Try a different browser";
+        }
+        
+        alert(errorMsg);
+        modal.style.display = "none";
+        if (scanner) {
+            try { scanner.clear(); } catch(e) {}
+        }
+        scanner = null;
+    }
 });
 
 // Close scanner
@@ -274,6 +387,26 @@ document.getElementById("close-scanner").addEventListener("click", function () {
     }
     // previewBox.style.boxShadow = "";
     modal.style.display = "none";
+});
+
+// Export to Excel
+document.getElementById("export-excel-btn").addEventListener("click", function() {
+    const eventId = events.value;
+    if (!eventId) {
+        alert('Please select an event first!');
+        return;
+    }
+    window.location.href = `/export_attendance/excel/${eventId}`;
+});
+
+// Export to PDF
+document.getElementById("export-pdf-btn").addEventListener("click", function() {
+    const eventId = events.value;
+    if (!eventId) {
+        alert('Please select an event first!');
+        return;
+    }
+    window.open(`/export_attendance/pdf/${eventId}`, '_blank');
 });
 </script>
 

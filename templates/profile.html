@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div style="min-height: 100vh; background: #0f0f1f; font-family: 'Poppins', sans-serif; display: flex; flex-direction: column; align-items: center;">
+<div style="min-height: 100vh; background: #0f0f1f; font-family: 'Poppins', sans-serif; display: flex; flex-direction: column; align-items: center; padding-bottom: 40px;">
 
     <!-- Fixed Header -->
     <div style="position: fixed; top: 0; left: 0; right: 0;
@@ -26,7 +26,7 @@
     <!-- Spacer -->
     <div style="height: 100px;"></div>
 
-    <div id="profileContainer" style="width: 100%; max-width: 800px; display: flex; flex-direction: column; gap: 15px;">
+    <div id="profileContainer" style="width: 100%; max-width: 800px; display: flex; flex-direction: column; gap: 15px; padding: 0 15px;">
 
         <!-- Flash Messages -->
         {% with messages = get_flashed_messages(with_categories=true) %}
@@ -43,63 +43,90 @@
             {% endif %}
         {% endwith %}
 
+        <!-- Pending Update Notice -->
+        {% if pending_update %}
+        <div style="background: linear-gradient(135deg, #ff9d0044, #ffb00044); border: 2px solid #ff9d00; border-radius: 10px; padding: 15px; margin-bottom: 15px; box-shadow: 0 0 15px #ff9d0066;">
+            <p style="color: #ff9d00; font-weight: bold; margin: 0 0 10px 0; font-size: 1.1em;">
+                ⏳ Pending Profile Update
+            </p>
+            <p style="color: #fff; margin: 5px 0; font-size: 0.95em;">
+                You have a profile update submitted on <strong>{{ pending_update.submitted_at.strftime('%B %d, %Y at %I:%M %p') }}</strong> awaiting admin approval.
+            </p>
+            <p style="color: #ffcc00; margin: 5px 0 0 0; font-size: 0.9em;">
+                You cannot submit another update until this one is reviewed.
+            </p>
+        </div>
+        {% endif %}
+
         <!-- View Mode -->
         <div id="viewProfile" style="background: #0f0f1f; border-radius: 15px; padding: 25px; box-shadow: 0 0 20px #00f6ff44;">
-            <p><strong>Username:</strong> {{ current_user.username }}</p>
-            <p><strong>Email:</strong> {{ current_user.email }}</p>
-            <p><strong>Full Name:</strong> {{ current_user.full_name }}</p>
-            <p><strong>Age:</strong> {{ current_user.age }}</p>
-            <p><strong>Year Level:</strong> {{ current_user.year_level }}</p>
-            <p><strong>Status:</strong> {{ current_user.status }}</p>
-            <p><strong>Citizenship:</strong> {{ current_user.citizenship }}</p>
-            <p><strong>Address:</strong> {{ current_user.address }}</p>
-            <p><strong>Place of Birth:</strong> {{ current_user.place_of_birth }}</p>
+            <p style="color: #fff; margin: 10px 0;"><strong style="color: #00f6ff;">Username:</strong> {{ current_user.username or 'Not set' }}</p>
+            <p style="color: #fff; margin: 10px 0;"><strong style="color: #00f6ff;">Email:</strong> {{ current_user.email or 'Not set' }}</p>
+            <p style="color: #fff; margin: 10px 0;"><strong style="color: #00f6ff;">Full Name:</strong> {{ current_user.full_name or 'Not set' }}</p>
+            <p style="color: #fff; margin: 10px 0;"><strong style="color: #00f6ff;">Age:</strong> {{ current_user.age or 'Not set' }}</p>
+            <p style="color: #fff; margin: 10px 0;"><strong style="color: #00f6ff;">Year Level:</strong> {{ current_user.year_level or 'Not set' }}</p>
+            <p style="color: #fff; margin: 10px 0;"><strong style="color: #00f6ff;">Status:</strong> {{ current_user.status or 'Not set' }}</p>
+            <p style="color: #fff; margin: 10px 0;"><strong style="color: #00f6ff;">Citizenship:</strong> {{ current_user.citizenship or 'Not set' }}</p>
+            <p style="color: #fff; margin: 10px 0;"><strong style="color: #00f6ff;">Address:</strong> {{ current_user.address or 'Not set' }}</p>
+            <p style="color: #fff; margin: 10px 0;"><strong style="color: #00f6ff;">Place of Birth:</strong> {{ current_user.place_of_birth or 'Not set' }}</p>
             
-            <button id="editBtn" style="margin-top: 20px; padding: 12px; background: linear-gradient(135deg, #00ff85, #00d4ff);
-                    color: #0f0f1f; font-weight: bold; border-radius: 10px; border: none; cursor: pointer;
-                    box-shadow: 0 0 8px #00f6ff66;">✏️ Edit Profile</button>
+            <button id="editBtn" {% if pending_update %}disabled{% endif %} 
+                    style="margin-top: 20px; padding: 12px; 
+                    background: {% if pending_update %}#666{% else %}linear-gradient(135deg, #00ff85, #00d4ff){% endif %};
+                    color: {% if pending_update %}#999{% else %}#0f0f1f{% endif %}; 
+                    font-weight: bold; border-radius: 10px; border: none; 
+                    cursor: {% if pending_update %}not-allowed{% else %}pointer{% endif %};
+                    box-shadow: {% if not pending_update %}0 0 8px #00f6ff66{% endif %};">
+                ✏️ Edit Profile{% if pending_update %} (Pending Approval){% endif %}
+            </button>
         </div>
 
         <!-- Edit Mode (Initially Hidden) -->
         <form id="editProfileForm" method="post" action="{{ url_for('submit_profile_update') }}" style="display: none; flex-direction: column; gap: 15px;
               background: #0f0f1f; border-radius: 15px; padding: 25px; box-shadow: 0 0 20px #00f6ff44;">
-            <label>Username:
-                <input name="username" value="{{ current_user.username }}" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #00f6ff44; background: #0f0f1f; color: #fff;">
+            <label style="color: #00f6ff; font-weight: bold;">Username:
+                <input name="username" value="{{ current_user.username or '' }}" required style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #00f6ff44; background: #1a1a2e; color: #fff; margin-top: 5px;">
             </label>
-            <label>Email:
-                <input name="email" value="{{ current_user.email }}" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #00f6ff44; background: #0f0f1f; color: #fff;">
+            <label style="color: #00f6ff; font-weight: bold;">Email:
+                <input type="email" name="email" value="{{ current_user.email or '' }}" required style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #00f6ff44; background: #1a1a2e; color: #fff; margin-top: 5px;">
             </label>
-            <label>Full Name:
-                <input name="full_name" value="{{ current_user.full_name }}" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #00f6ff44; background: #0f0f1f; color: #fff;">
+            <label style="color: #00f6ff; font-weight: bold;">Full Name:
+                <input name="full_name" value="{{ current_user.full_name or '' }}" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #00f6ff44; background: #1a1a2e; color: #fff; margin-top: 5px;">
             </label>
-            <label>Age:
-                <input type="number" name="age" value="{{ current_user.age }}" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #00f6ff44; background: #0f0f1f; color: #fff;">
+            <label style="color: #00f6ff; font-weight: bold;">Age:
+                <input type="number" name="age" value="{{ current_user.age or '' }}" min="1" max="120" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #00f6ff44; background: #1a1a2e; color: #fff; margin-top: 5px;">
             </label>
-            <label>Year Level:
-                <input name="year_level" value="{{ current_user.year_level }}" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #00f6ff44; background: #0f0f1f; color: #fff;">
+            <label style="color: #00f6ff; font-weight: bold;">Year Level:
+                <input name="year_level" value="{{ current_user.year_level or '' }}" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #00f6ff44; background: #1a1a2e; color: #fff; margin-top: 5px;">
             </label>
-            <label>Status:
-                <input name="status" value="{{ current_user.status }}" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #00f6ff44; background: #0f0f1f; color: #fff;">
+            <label style="color: #00f6ff; font-weight: bold;">Status:
+                <input name="status" value="{{ current_user.status or '' }}" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #00f6ff44; background: #1a1a2e; color: #fff; margin-top: 5px;">
             </label>
-            <label>Citizenship:
-                <input name="citizenship" value="{{ current_user.citizenship }}" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #00f6ff44; background: #0f0f1f; color: #fff;">
+            <label style="color: #00f6ff; font-weight: bold;">Citizenship:
+                <input name="citizenship" value="{{ current_user.citizenship or '' }}" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #00f6ff44; background: #1a1a2e; color: #fff; margin-top: 5px;">
             </label>
-            <label>Address:
-                <input name="address" value="{{ current_user.address }}" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #00f6ff44; background: #0f0f1f; color: #fff;">
+            <label style="color: #00f6ff; font-weight: bold;">Address:
+                <textarea name="address" rows="2" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #00f6ff44; background: #1a1a2e; color: #fff; margin-top: 5px; resize: vertical;">{{ current_user.address or '' }}</textarea>
             </label>
-            <label>Place of Birth:
-                <input name="place_of_birth" value="{{ current_user.place_of_birth }}" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #00f6ff44; background: #0f0f1f; color: #fff;">
+            <label style="color: #00f6ff; font-weight: bold;">Place of Birth:
+                <input name="place_of_birth" value="{{ current_user.place_of_birth or '' }}" style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #00f6ff44; background: #1a1a2e; color: #fff; margin-top: 5px;">
             </label>
 
-            <button type="submit" style="padding: 12px; background: linear-gradient(135deg, #00ff85, #00d4ff);
-                   color: #0f0f1f; font-weight: bold; border-radius: 10px; border: none;
-                   cursor: pointer; box-shadow: 0 0 8px #00f6ff66;">💾 Submit to Admin</button>
+            <div style="display: flex; gap: 10px;">
+                <button type="submit" style="flex: 1; padding: 12px; background: linear-gradient(135deg, #00ff85, #00d4ff);
+                       color: #0f0f1f; font-weight: bold; border-radius: 10px; border: none;
+                       cursor: pointer; box-shadow: 0 0 8px #00f6ff66;">💾 Save Changes</button>
+                <button type="button" id="cancelBtn" style="flex: 1; padding: 12px; background: linear-gradient(135deg, #ff4c4c, #ff6b6b);
+                       color: #fff; font-weight: bold; border-radius: 10px; border: none;
+                       cursor: pointer; box-shadow: 0 0 8px #ff4c4c66;">❌ Cancel</button>
+            </div>
         </form>
     </div>
 </div>
 
 <script>
     const editBtn = document.getElementById('editBtn');
+    const cancelBtn = document.getElementById('cancelBtn');
     const viewProfile = document.getElementById('viewProfile');
     const editForm = document.getElementById('editProfileForm');
 
@@ -107,10 +134,30 @@
         viewProfile.style.display = 'none';
         editForm.style.display = 'flex';
     });
+
+    cancelBtn.addEventListener('click', () => {
+        viewProfile.style.display = 'block';
+        editForm.style.display = 'none';
+    });
 </script>
 
 <style>
+    html, body {
+        overflow-x: hidden;
+        scroll-behavior: smooth;
+    }
+    
     input:focus { outline: none; border-color: #00fff6; box-shadow: 0 0 8px #00f6ff; }
-    button:hover, a:hover { transform: scale(1.05); box-shadow: 0 0 12px #00ff85, inset 0 0 10px #00d4ff; }
+    
+    button:hover:not(:disabled), a:hover { 
+        transform: scale(1.05); 
+        box-shadow: 0 0 12px #00ff85, inset 0 0 10px #00d4ff; 
+    }
+    
+    textarea:focus {
+        outline: none;
+        border-color: #00fff6;
+        box-shadow: 0 0 8px #00f6ff;
+    }
 </style>
 {% endblock %}
